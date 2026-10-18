@@ -1,4 +1,0 @@
-interface:
-  display_name: "Specs"
-  short_description: "Triage and track local issues and feature requests"
-  default_prompt: "Use $specs to validate and track this issue locally."

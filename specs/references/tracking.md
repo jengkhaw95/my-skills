@@ -2,13 +2,13 @@
 
 ## Format and location
 
-One `.specs/issues/SPEC-<8-uppercase-hex>.md` per issue, committed with the repository when desired. Markdown provides readable specs; flat YAML frontmatter provides searchable metadata. The helper writes JSON-encoded YAML values using Python's standard library. This is **restricted YAML**: every line is `key: <JSON value>`; do not convert it to general YAML, comments, folded strings, or unquoted text. The body is ordinary Markdown, including fences and horizontal rules.
+One `.specs/issues/SPEC-<8-uppercase-hex>.md` per issue, committed with the repository when desired. Markdown provides readable specs; flat YAML frontmatter provides searchable metadata. The helper writes JSON-encoded YAML values using Python's standard library; it has no host-specific dependency. This is **restricted YAML**: every line is `key: <JSON value>`; do not convert it to general YAML, comments, folded strings, or unquoted text. The body is ordinary Markdown, including fences and horizontal rules.
 
 Fields: `schema`, `id`, `title`, `kind`, `status`, `priority`, `revision`, `created_at`, `updated_at`, `owner`, `claimed_at`, `reviewer`, `review_scope`. Schema is 1; timestamps are UTC; IDs are immutable. Every mutation increments revision. `list` emits metadata only; `show` emits a full record; `list --query` searches titles/bodies with case-insensitive ANDed terms. Try separate searches for different terminology. No aggregate index requires synchronization.
 
 For final duplicate discovery use `list --snapshot`, which emits `{snapshot, issues}`. The snapshot hashes all records, even with query/status filters. `create --expected-snapshot TOKEN` compares that generation under the mutation lock and rejects creation if any issue changed. On conflict repeat discovery and inspect matches, not merely refresh the token. This closes concurrent intake races for agents following the search protocol; it cannot detect semantic duplicates by itself. Two intentionally sequential requests still require careful duplicate assessment.
 
-`root` emits `project_root`, `tracking_root`, `lock_path`. Linked Git worktrees share `.specs` in the primary worktree from `git worktree list`; mutations there are intentional and output identifies the location. The primary checkout must remain accessible. Outside Git, callers must supply the same project root. Locking uses `fcntl.flock` on macOS/Linux; Windows is unsupported. Locks cannot coordinate separate clones/hosts or arbitrary editors. Do not edit metadata directly or mix helper versions on a shared tracker.
+`root` emits `project_root`, `tracking_root`, `lock_path`. Linked Git worktrees share `.specs` in the primary worktree from `git worktree list`; mutations there are intentional and output identifies the location. The primary checkout must remain accessible. Outside Git, callers must supply the same project root. Locking uses `fcntl.flock` on POSIX; read-only commands do not lock. On Windows, use WSL for mutations. Locks cannot coordinate separate clones/hosts or arbitrary editors. Do not edit metadata directly or mix helper versions on a shared tracker.
 
 ## Lifecycle
 
@@ -23,7 +23,7 @@ For final duplicate discovery use `list --snapshot`, which emits `{snapshot, iss
 
 `claim` atomically changes `open → working`, requiring the inspected revision and a unique owner token. Concurrent losers fail without writing. Ownership has no timeout. `update` requires a revision and the owner token for working issues; it cannot exit `working`. `release` requires ownership and a handoff note, changing `working → open|blocked`. To recover an interrupted claim, first verify that its worker stopped, then deliberately release using the recorded token. This is administrative recovery, not permission to impersonate a running worker. There is no force/expiry flag.
 
-`complete` requires ownership, revision, distinct reviewer identity, scope, and a saved report starting `Verdict: pass` and containing `No actionable findings.`. This records an attestation, not proof of independent/correct review. Nonworking states can be changed through revision-checked `update`, except entering `working`/`completed` is forbidden. Explicit reopening clears prior ownership/review metadata; historical reports stay in the body. Do not reopen completed/closed records without a user-directed reason or silently enlarge their scope.
+`complete` requires ownership, revision, a distinct reviewer identity (an agent, a fresh session, or a human such as `human:<name>`), scope, and a saved report starting `Verdict: pass` and containing `No actionable findings.`. This records an attestation, not proof of independent/correct review. Nonworking states can be changed through revision-checked `update`, except entering `working`/`completed` is forbidden. Explicit reopening clears prior ownership/review metadata; historical reports stay in the body. Do not reopen completed/closed records without a user-directed reason or silently enlarge their scope.
 
 P0: urgent critical outage/loss/exposure; P1: high impact or core flow blocked; P2: normal bug/feature priority (default); P3: minor improvement. Priority expresses impact, not certainty.
 
@@ -76,4 +76,4 @@ These are separate examples, not a sequence. Reread after mutations and use the 
 
 `root`, `list`, and mutations emit JSON; `show` emits Markdown. Errors exit nonzero without repairing corrupt records. Mutations take the same short-lived lock and use atomic replacement. Lock files live in the shared Git directory or `.specs/.runtime/` outside Git; do not commit non-Git runtime files. Process exit releases the OS lock, while the durable task claim remains.
 
-Install the set together as sibling `specs`, `work`, `review` directories; use skill discovery for other layouts rather than project-relative assumptions. Standalone review needs no tracker.
+Install the set together as sibling `specs`, `work`, `review` directories and locate them by skill discovery or from their common parent directory; do not assume the project's working directory contains them. Standalone review needs no tracker.

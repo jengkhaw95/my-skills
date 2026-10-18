@@ -1,4 +1,0 @@
-interface:
-  display_name: "Work"
-  short_description: "Claim tasks, implement changes, and obtain review"
-  default_prompt: "Use $work to pick up an open local task and complete it."

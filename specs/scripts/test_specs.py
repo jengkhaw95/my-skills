@@ -1,6 +1,7 @@
 """Integration tests for tracker ownership and storage invariants; all data is temporary."""
 
 from concurrent.futures import ThreadPoolExecutor
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -62,6 +63,16 @@ class TrackerTests(unittest.TestCase):
         self.assertEqual(json.loads(self.run_cli("list").stdout), [])
         self.run_cli("show", "SPEC-00000000", ok=False)
         self.assertEqual(list(self.repo.iterdir()), [])
+
+    def test_mutation_lock_reports_unsupported_platform(self):
+        spec = importlib.util.spec_from_file_location("specs_under_test", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.fcntl = None
+        with self.assertRaises(module.TrackerError) as raised:
+            with module.locked(self.base / "tracker.lock"):
+                pass
+        self.assertIn("POSIX", str(raised.exception))
 
     def test_roundtrip_and_filtered_search(self):
         issue = self.create()

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Local issue records with atomic, owner-checked transitions (POSIX, stdlib)."""
+"""Local issue records with atomic, owner-checked transitions (Python 3.9+, stdlib)."""
 
 import argparse
 from contextlib import contextmanager
 from datetime import datetime, timezone
-import fcntl
 import hashlib
 import json
 import os
@@ -14,6 +13,11 @@ import subprocess
 import sys
 import tempfile
 import uuid
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - read-only commands still work on non-POSIX hosts
+    fcntl = None
 
 
 STATES = ("open", "needs-info", "working", "blocked", "completed", "closed")
@@ -142,6 +146,11 @@ def render(meta, body):
 
 @contextmanager
 def locked(lock):
+    if fcntl is None:
+        raise TrackerError(
+            "Tracker mutations require POSIX file locking; "
+            "run under WSL or another POSIX environment"
+        )
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)

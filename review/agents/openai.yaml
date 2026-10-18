@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review"
-  short_description: "Review behavior, security, and coding standards"
-  default_prompt: "Use $review to check these changes without modifying the project."
