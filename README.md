@@ -11,21 +11,50 @@ work   → atomic claim → working → implement ↔ independent review → com
 
 The skills are designed to be harness-agnostic. They do not require a particular agent product, model, subagent API, browser tool, or version-control system. [PORTABILITY.md](PORTABILITY.md) records the capability contract and fallbacks.
 
-## Usage
+## Get started
 
-Invoke a skill by name using your harness's syntax. Examples: `/specs` in Claude Code, `$specs` in Codex, `@specs` in clients that use mentions, or a plain request such as "use the specs skill to ...". Most harnesses also select a skill automatically from its description.
+### Install with the skills CLI
 
-- `specs Users cannot save an address containing Unicode characters.`
-- `work SPEC-1234ABCD`
-- `work Pick up the highest-priority actionable local issue.`
-- `work Add keyboard navigation to the settings menu.` — runs intake before claiming.
-- `review Review the current changes against SPEC-1234ABCD without editing files.`
+The [skills CLI](https://github.com/vercel-labs/skills) installs Agent Skills into the directory used by your harness. It requires Node.js 22.20+; the tracker also needs Python 3.9+.
 
-To run several tasks, have a coordinating agent start `work` in separate worker contexts, or run separate sessions yourself. Each worker claims its own issue and obtains an independent reviewer. Use isolated working copies (for example Git worktrees) for overlapping implementation areas; claims prevent duplicate task pickup, not conflicting edits to the same files.
+```bash
+npx skills add jengkhaw95/my-skills
+```
 
-## Installation
+The command prompts for the target harness and install scope. The `--list` preview should report `review`, `specs`, and `work`. Non-interactive examples:
 
-Keep the three skill folders together as siblings:
+```bash
+# All three skills, globally, for Codex
+npx skills add jengkhaw95/my-skills --skill '*' -a codex -g -y
+
+# Every skill to every detected harness
+npx skills add jengkhaw95/my-skills --all
+
+# Preview without installing
+npx skills add jengkhaw95/my-skills --list
+```
+
+Replace `codex` with `claude-code`, `cursor`, `gemini-cli`, `opencode`, `github-copilot`, or another agent ID supported by the CLI. Add `--copy` on systems where symlinks are restricted. Review skill contents before installing; installed skills run with the agent's permissions.
+
+### Install from a local checkout
+
+From the parent directory of a Git checkout named `my-skills`:
+
+```bash
+npx skills add my-skills
+```
+
+Or point at the folder explicitly from anywhere:
+
+```bash
+npx skills add ./path/to/my-skills
+```
+
+`npx skills add my-skills` is a local-path form; the CLI resolves the bare name as a Git repository on disk. For a remote install, the CLI needs an `owner/repo` source, so use `npx skills add jengkhaw95/my-skills`.
+
+### Install manually
+
+Keep the three skill folders together as siblings in the directory your harness scans for Agent Skills:
 
 ```text
 <skills-directory>/
@@ -34,15 +63,36 @@ Keep the three skill folders together as siblings:
   review/
 ```
 
-Copy or symlink them into the directory your harness scans for Agent Skills. Common conventions include:
-
-| Harness convention | User-level example | Project-level example |
-| --- | --- | --- |
-| Agent Skills standard | `~/.claude/skills/`, `~/.codex/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/` | `.claude/skills/`, `.agents/skills/`, `.github/skills/` |
-
-Consult your harness's documentation; the list above is illustrative, not a requirement. Do not overwrite existing skills with the same names.
+Common locations include `~/.claude/skills/`, `~/.codex/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/`, and project-local `.agents/skills/`, `.claude/skills/`, or `.github/skills/`. Consult your harness's documentation; the list is illustrative, not a requirement. Do not overwrite existing skills with the same names.
 
 If the harness has no native skill discovery, point it at the relevant `SKILL.md` file (or paste that file as instructions) and keep the sibling folders reachable so `work` can find `specs` and `review`. The repository is the source of these skills; project issue records are created in the project where they are invoked.
+
+### Verify and manage
+
+```bash
+npx skills list
+npx skills update
+npx skills remove specs work review
+```
+
+Add `-g` for global installs and `-a <agent>` to limit an operation to specific harnesses.
+
+## Usage
+
+Invoke a skill by name using your harness's syntax. Examples: `/specs` in Claude Code, `$specs` in Codex, `@specs` in clients that use mentions, or a plain request such as "use the specs skill to ...". Most harnesses also select a skill automatically from its description.
+
+| Skill | Use it for | Example request |
+| --- | --- | --- |
+| `specs` | Validate, deduplicate, and triage a request into a tracked issue | `specs Users cannot save an address containing Unicode characters.` |
+| `work` | Claim a task, implement it, and drive independent review | `work SPEC-1234ABCD` |
+| `review` | Read-only review of a change or existing feature | `review Review the current changes against SPEC-1234ABCD without editing files.` |
+
+More examples:
+
+- `work Pick up the highest-priority actionable local issue.`
+- `work Add keyboard navigation to the settings menu.` — runs intake before claiming.
+
+To run several tasks, have a coordinating agent start `work` in separate worker contexts, or run separate sessions yourself. Each worker claims its own issue and obtains an independent reviewer. Use isolated working copies (for example Git worktrees) for overlapping implementation areas; claims prevent duplicate task pickup, not conflicting edits to the same files.
 
 ## Dependencies and capabilities
 
