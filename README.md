@@ -118,6 +118,7 @@ No tracker or coding standard is created merely by installing the skills. The fi
 - **Atomic claims and freshness checks**: a Python helper uses OS file locking and atomic replacement. Creation checks a snapshot from the final duplicate search, so concurrent intake must reconcile instead of creating duplicate tasks from a stale backlog. Updates check issue revisions. Linked Git worktrees share the primary checkout's `.specs/issues/` directory. Separate clones or hosts need another coordination service.
 - **Durable ownership**: no automatic lease expiry that could start a second worker while the first still runs. Interrupted tasks need deliberate release after checking their owner stopped.
 - **Independent review with three verdicts**: `pass`, `changes-required`, `incomplete`. Missing required verification cannot count as success. The completion helper records the worker's attestation; it is not a security boundary against an agent fabricating evidence.
+- **Path hygiene**: records identify the repository by name and use repository-relative paths. The helper rejects absolute home-directory paths in titles, bodies, scopes, handoff notes, and review reports, so a committed record does not embed the local checkout path or user name.
 
 ## Verification
 

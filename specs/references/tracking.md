@@ -10,6 +10,10 @@ For final duplicate discovery use `list --snapshot`, which emits `{snapshot, iss
 
 `root` emits `project_root`, `tracking_root`, `lock_path`. Linked Git worktrees share `.specs` in the primary worktree from `git worktree list`; mutations there are intentional and output identifies the location. The primary checkout must remain accessible. Outside Git, callers must supply the same project root. Locking uses `fcntl.flock` on POSIX; read-only commands do not lock. On Windows, use WSL for mutations. Locks cannot coordinate separate clones/hosts or arbitrary editors. Do not edit metadata directly or mix helper versions on a shared tracker.
 
+## Path and identity hygiene
+
+Records may be committed and published. Identify the checkout by repository name and use repository-relative paths (`src/config.ts`, `HEAD 0dca40d`); the record's own location already identifies the repository. Never write an absolute path containing a home directory or user name (`/Users/<name>`, `/home/<name>`, `C:\Users\<name>`), a hostname, or a private checkout layout. Use role-neutral reviewer identities such as `human:reviewer-1` rather than a personal name. The helper rejects body, title, scope, handoff-note, and review-report text containing an absolute home path.
+
 ## Lifecycle
 
 | Status | Meaning | Pickup? |
@@ -23,7 +27,7 @@ For final duplicate discovery use `list --snapshot`, which emits `{snapshot, iss
 
 `claim` atomically changes `open → working`, requiring the inspected revision and a unique owner token. Concurrent losers fail without writing. Ownership has no timeout. `update` requires a revision and the owner token for working issues; it cannot exit `working`. `release` requires ownership and a handoff note, changing `working → open|blocked`. To recover an interrupted claim, first verify that its worker stopped, then deliberately release using the recorded token. This is administrative recovery, not permission to impersonate a running worker. There is no force/expiry flag.
 
-`complete` requires ownership, revision, a distinct reviewer identity (an agent, a fresh session, or a human such as `human:<name>`), scope, and a saved report starting `Verdict: pass` and containing `No actionable findings.`. This records an attestation, not proof of independent/correct review. Nonworking states can be changed through revision-checked `update`, except entering `working`/`completed` is forbidden. Explicit reopening clears prior ownership/review metadata; historical reports stay in the body. Do not reopen completed/closed records without a user-directed reason or silently enlarge their scope.
+`complete` requires ownership, revision, a distinct reviewer identity (an agent, a fresh session, or a human such as `human:reviewer-1`), scope, and a saved report starting `Verdict: pass` and containing `No actionable findings.`. This records an attestation, not proof of independent/correct review. Nonworking states can be changed through revision-checked `update`, except entering `working`/`completed` is forbidden. Explicit reopening clears prior ownership/review metadata; historical reports stay in the body. Do not reopen completed/closed records without a user-directed reason or silently enlarge their scope.
 
 P0: urgent critical outage/loss/exposure; P1: high impact or core flow blocked; P2: normal bug/feature priority (default); P3: minor improvement. Priority expresses impact, not certainty.
 

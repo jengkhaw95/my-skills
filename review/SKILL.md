@@ -31,7 +31,7 @@ Use this shape with findings ordered by impact:
 
 ```text
 Verdict: pass
-Scope: checkout + baseline/range or feature; current candidate identifier
+Scope: repository name + baseline/range or feature; current candidate identifier; repository-relative paths for changed files
 
 Findings:
 - [P1] Specific title — path:line
@@ -48,7 +48,7 @@ Checks:
 Gaps: unresolved evidence/environment limits, or none.
 ```
 
-The first line must be exactly `Verdict: pass`, `Verdict: changes-required`, or `Verdict: incomplete`. Use `pass` only when every applicable gate is verified.
+The first line must be exactly `Verdict: pass`, `Verdict: changes-required`, or `Verdict: incomplete`. Use `pass` only when every applicable gate is verified. Keep paths repository-relative and identify the repository by name; a report may be saved into a committed issue record, so do not include absolute checkout or home-directory paths.
 
 P0: immediate severe impact; P1: high impact; P2: ordinary correctness/security/standard defect; P3: low-impact actionable issue. Give verified changed-code lines when possible; for missing behavior, name the relevant symbol/path. Keep optional improvements separate and do not let preferences block completion.
 

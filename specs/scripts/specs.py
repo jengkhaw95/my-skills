@@ -24,6 +24,9 @@ STATES = ("open", "needs-info", "working", "blocked", "completed", "closed")
 KINDS = ("bug", "feature", "task")
 PRIORITIES = ("P0", "P1", "P2", "P3")
 ID_PATTERN = re.compile(r"SPEC-[0-9A-F]{8}\Z")
+HOME_PATH_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9._-])(?:/Users[\\/]+|/home[\\/]+|[A-Za-z]:[\\/]+Users[\\/]+)[A-Za-z0-9._-]+"
+)
 FIELDS = {
     "schema", "id", "title", "kind", "status", "priority", "revision",
     "created_at", "updated_at", "owner", "claimed_at", "reviewer", "review_scope",
@@ -42,6 +45,20 @@ def nonempty(value, label):
     if not isinstance(value, str) or not value.strip():
         raise TrackerError(f"{label} must be nonempty")
     return value.strip()
+
+
+def reject_home_paths(text, label):
+    if HOME_PATH_PATTERN.search(text):
+        raise TrackerError(
+            f"{label} contains an absolute home path; identify the repository by name "
+            "and use repository-relative paths"
+        )
+
+
+def hygienic(value, label):
+    value = nonempty(value, label)
+    reject_home_paths(value, label)
+    return value
 
 
 def git(directory, *args):
@@ -242,6 +259,7 @@ def execute(args):
             if snapshot != args.expected_snapshot:
                 raise TrackerError("Tracker changed since duplicate search; reread and reconcile before creating")
             body = from_file(args.body_file, "body")
+            reject_home_paths(body, "body")
             while True:
                 issue_id = "SPEC-" + uuid.uuid4().hex[:8].upper()
                 path = issue_path(root, issue_id)
@@ -249,7 +267,7 @@ def execute(args):
                     break
             timestamp = now()
             meta = dict(
-                schema=1, id=issue_id, title=nonempty(args.title, "title"), kind=args.kind,
+                schema=1, id=issue_id, title=hygienic(args.title, "title"), kind=args.kind,
                 status=args.status, priority=args.priority, revision=1,
                 created_at=timestamp, updated_at=timestamp,
                 owner=None, claimed_at=None, reviewer=None, review_scope=None,
@@ -262,7 +280,7 @@ def execute(args):
             if args.command == "claim":
                 if meta["status"] != "open":
                     raise TrackerError(f"Task is not open: {meta['status']}, owner={meta['owner']}")
-                meta.update(status="working", owner=nonempty(args.owner, "owner"), claimed_at=now())
+                meta.update(status="working", owner=hygienic(args.owner, "owner"), claimed_at=now())
             elif args.command == "update":
                 if meta["status"] == "working":
                     expect_owner(meta, args.owner)
@@ -277,27 +295,30 @@ def execute(args):
                     meta["status"] = args.status
                     clear_claim(meta)
                 if args.title is not None:
-                    meta["title"] = nonempty(args.title, "title")
+                    meta["title"] = hygienic(args.title, "title")
                 if args.priority is not None:
                     meta["priority"] = args.priority
                 if args.body_file:
                     body = from_file(args.body_file, "body")
+                    reject_home_paths(body, "body")
             elif args.command == "release":
                 expect_owner(meta, args.owner)
                 note = from_file(args.note_file, "handoff note")
+                reject_home_paths(note, "handoff note")
                 body += f"\n## Handoff ({now()})\n\n{note}\n"
                 meta["status"] = args.status
                 clear_claim(meta)
             elif args.command == "complete":
                 expect_owner(meta, args.owner)
-                reviewer = nonempty(args.reviewer, "reviewer")
+                reviewer = hygienic(args.reviewer, "reviewer")
                 if reviewer == meta["owner"]:
                     raise TrackerError("Independent review identity must differ from owner")
                 report = from_file(args.review_file, "review report")
+                reject_home_paths(report, "review report")
                 if report.splitlines()[0].strip() != "Verdict: pass" or "No actionable findings." not in report:
                     raise TrackerError("Completion requires a passing review report with no actionable findings")
                 meta.update(status="completed", reviewer=reviewer,
-                            review_scope=nonempty(args.scope, "review scope"))
+                            review_scope=hygienic(args.scope, "review scope"))
                 body += f"\n## Independent review ({now()})\n\n{report}\n"
             meta["revision"] += 1
             meta["updated_at"] = now()

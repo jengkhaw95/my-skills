@@ -15,13 +15,14 @@ A reviewer that reuses the implementer's context, receives the implementer's pro
 Provide:
 
 - The installed `review` skill and its instructions; ask the reviewer to follow it.
-- Candidate scope: checkout path, baseline/range, and relevant untracked files.
+- Candidate scope: repository identity, baseline/range, and repository-relative paths for relevant changed and untracked files. Do not include absolute checkout or home-directory paths.
 - Issue ID, requirements, and acceptance criteria.
 - Repository instruction/standard files that apply.
 - Test/lint/format evidence already collected, clearly labeled as implementer claims.
 - A test URL, prepared environment, and safe credentials if browser checks apply.
 - Prohibitions: no edits to project files, tracker, commits, dependency installation, formatter/linter fix mode, or persistent external state. Temporary artifacts outside the project are allowed.
 - The required report shape, including one of `pass`, `changes-required`, or `incomplete`.
+- Path hygiene in the report: the repository name and repository-relative paths; no absolute checkout or home-directory paths, since the report may become part of a committed record.
 
 Do not include "please pass", your preferred verdict, or a defense of the implementation. Ask the reviewer to verify claims independently and report gaps.
 
@@ -33,4 +34,4 @@ Do not self-review and do not mark the issue `completed`. Preserve the candidate
 Independent reviewer unavailable: this harness provides no subagent, fresh session, or separate invocation, and no human reviewer is available. Candidate and checks are ready for review.
 ```
 
-When a human reviews, record a stable reviewer identity such as `human:<name>` in `complete`, and save their report to a file outside the repository. The helper checks only that the reviewer string differs from the owner; independence and the report's accuracy remain your attestation.
+When a human reviews, record a role-neutral reviewer identity such as `human:reviewer-1` in `complete`, and save their report to a file outside the repository. The helper checks only that the reviewer string differs from the owner; independence and the report's accuracy remain your attestation.

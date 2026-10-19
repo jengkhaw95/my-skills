@@ -195,6 +195,54 @@ class TrackerTests(unittest.TestCase):
         self.run_cli("claim", issue["id"], "--expected-revision", "1", "--owner", "worker", ok=False)
         self.assertEqual(path.read_text(), broken)
 
+    def test_absolute_home_paths_are_rejected(self):
+        leaky = self.base / "leaky.md"
+        leaky.write_text("Checkout: /Users/example/project\n")
+        snapshot = json.loads(self.run_cli("list", "--snapshot").stdout)["snapshot"]
+        result = self.run_cli(
+            "create", "--title", "Leaky record", "--kind", "task",
+            "--body-file", str(leaky), "--expected-snapshot", snapshot, ok=False,
+        )
+        self.assertIn("absolute home path", result.stderr)
+        self.assertEqual(json.loads(self.run_cli("list").stdout), [])
+
+        relative = self.base / "relative.md"
+        relative.write_text("See docs/Users/guide.md and src/home/page.ts.\n")
+        snapshot = json.loads(self.run_cli("list", "--snapshot").stdout)["snapshot"]
+        self.run_cli(
+            "create", "--title", "Relative paths", "--kind", "task",
+            "--body-file", str(relative), "--expected-snapshot", snapshot,
+        )
+
+        issue = self.claim(self.create())
+        leaky_note = self.base / "leaky-note.md"
+        leaky_note.write_text("Blocked at /home/example/project\n")
+        self.run_cli(
+            "update", issue["id"], "--expected-revision", "2", "--owner", "worker",
+            "--body-file", str(leaky), ok=False,
+        )
+        self.run_cli(
+            "release", issue["id"], "--owner", "worker", "--status", "blocked",
+            "--note-file", str(leaky_note), ok=False,
+        )
+        for scope in ("/home/example/project", "C:/Users/example/project", "C:\\Users\\example"):
+            self.run_cli(
+                "complete", issue["id"], "--owner", "worker", "--reviewer", "review-agent",
+                "--expected-revision", "2", "--scope", scope,
+                "--review-file", str(self.report), ok=False,
+            )
+        self.report.write_text(
+            "Verdict: pass\nScope: /Users/example/project\nNo actionable findings.\n"
+        )
+        self.run_cli(
+            "complete", issue["id"], "--owner", "worker", "--reviewer", "review-agent",
+            "--expected-revision", "2", "--scope", "repo @ HEAD",
+            "--review-file", str(self.report), ok=False,
+        )
+        listed = json.loads(self.run_cli("list", "--status", "working").stdout)
+        self.assertEqual([row["id"] for row in listed], [issue["id"]])
+        self.assertEqual(listed[0]["revision"], 2)
+
     def test_linked_git_worktrees_share_records_and_claims(self):
         def git(*args):
             return subprocess.run(
