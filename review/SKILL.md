@@ -1,59 +1,78 @@
 ---
 name: review
-description: Read-only review of code changes or existing features for functional correctness, security, and repository coding standards. Use standalone or as the independent gate for the work skill; use the harness's browser automation for browser-facing behavior.
+description: Review a design, code change, or existing behavior for correctness, security, simplicity, and verification. Use for a read-only assessment, a second opinion, or independent review before delivery.
 ---
 
 # Review
 
-Return an evidence-backed assessment without modifying the project, tracker, or persistent external state. Temporary test/browser artifacts outside the project are allowed. Never fix code, update status, commit or publish, install dependencies, run formatter/linter fix mode, or invoke `work` during review.
+Assess the actual candidate and return findings supported by evidence.
+Do not edit project files or persistent external state.
+Use disposable copies when checks would write files.
 
-## Independence
+## Required language
 
-Review a candidate you did not implement. Do not accept the implementer's conclusion or summary as evidence; inspect the code, tests, and runtime behavior yourself. If you implemented the candidate, say so and stop rather than issuing a verdict.
+Use ASD-STE100 Simplified Technical English for all prose, including findings, reports, and instructions for other agents.
+Use approved words with their approved meanings and parts of speech.
+Use permitted technical nouns and technical verbs consistently.
+Limit procedure sentences to 20 words and descriptive sentences to 25 words.
+Use active voice and direct commands. Put conditions before actions.
+Keep code, commands, identifiers, and direct quotations exact.
+Check the official rules and dictionary when available.
+If a vocabulary check is unavailable, report that gap. Do not claim full STE compliance without evidence.
 
 ## Establish scope
 
-Read the repository's instruction files when present (for example `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or harness-specific rule files), `CODING_STANDARD.md` if present, requirements/acceptance criteria, and relevant code/tests. Honor the supplied checkout/range. Include relevant untracked changes when in scope. Without a supplied range, inspect repository state; ask when multiple plausible scopes change the verdict. Existing-feature reviews need not have a diff.
+1. Identify the requirements and exact design, version, diff, or existing behavior under review.
+2. Inspect repository instructions, relevant code, callers, tests, and current changes.
+3. Include relevant untracked files when they belong to the candidate.
+4. State whether the review is independent. Label review of your own work as self-review.
+5. Inspect check commands before running them. Isolate writes and avoid production side effects.
 
-Inspect check scripts before running them. Use check-only lint/format commands and relevant tests only when they preserve project files. Redirect caches, reports, builds, and browser profiles to disposable directories outside the project using supported settings. A command called `test` or `lint` is not necessarily read-only. If a check requires project-relative outputs, use a disposable test copy outside the project or request a prepared environment from the implementer. Copy the actual candidate, including relevant untracked files; do not change source to make tests pass. Avoid hard links, VCS metadata pointing back to the original, and linked writable dependencies that could alter it. If isolation cannot be established, report the check as a gap. Check original repository state before/after for unexpected writes; disclose them without reverting or modifying unrelated changes.
+Do not treat the implementer's summary or another reviewer's conclusion as proof.
+Do not broaden the scope to unrelated cleanup.
+Ask when materially different review scopes are plausible.
 
-## Assess
+## Examine the candidate
 
-- **Feature:** acceptance criteria, normal flow, meaningful boundaries/error paths, regressions, and callers. Inspect surrounding implementation, not just diff lines. Distinguish observed behavior, static inference, and unverified claims.
-- **Security:** relevant trust boundaries, authorization, input handling, sensitive data exposure, injection, and dependency/configuration effects. Report reachable risks with concrete conditions, not generic concerns.
-- **Standards:** apply `CODING_STANDARD.md` and established conventions; check lint/format when configured. If the standard is absent, say so and use repository conventions. Personal preferences are not violations.
+- Verify the requested behavior and the conditions under which it can fail.
+- Trace callers and surrounding code instead of reading only changed lines.
+- Check valid states, data ownership, errors, retries, persistence, and concurrency where relevant.
+- Inspect relevant authorization, input validation, injection risks, and sensitive data handling.
+- Check required compatibility and migration of callers.
+- Apply documented standards and established conventions.
+- Identify unnecessary mutable state, duplicated decisions, or layers that hide no meaningful complexity.
+- Check that comments explain necessary constraints and agree with the code.
+- Verify that tests assert observable behavior and can detect the relevant failure.
 
-For browser-facing scope, including existing-feature reviews and changed flows, components, client state, navigation, accessibility interactions, or rendering, use the browser automation available to the harness and [the browser procedure](references/browser-checks.md). Static review alone cannot verify runtime behavior. Missing browser capability, browser runtime, server, credentials, or data is a gap. Browser tests do not replace static review or applicable lint/format checks.
+For browser or command-line behavior, use that interface when the environment permits it.
+For visual equivalence, compare matching states and exercise interactions.
+For performance claims, inspect the workload, repeated samples, errors, completed work, and limiting resource.
+For a design, test assumptions against failure cases and compare viable simpler alternatives.
 
-## Precise report
+Treat automated findings as claims to verify.
+Merge duplicate findings and assess each remaining claim on its merits.
+Explain why a disputed finding is valid or unsupported.
+Personal preferences do not become defects without a requirement or concrete impact.
 
-Use this shape with findings ordered by impact:
+## Report precisely
 
-```text
-Verdict: pass
-Scope: repository name + baseline/range or feature; current candidate identifier; repository-relative paths for changed files
+Lead with one verdict:
 
-Findings:
-- [P1] Specific title — path:line
-  Condition, observed/expected behavior, and concrete impact.
-  Evidence: code path, reproduction, or check output.
-  Requested change: smallest corrective outcome, without editing it.
+- `pass`: No actionable findings remain, and all applicable checks have evidence.
+- `changes-required`: At least one actionable defect has supporting evidence.
+- `incomplete`: No defect is established, but missing scope or evidence prevents a complete assessment.
 
-Checks:
-- Feature: criterion/path — passed / failed / not run; evidence
-- Security: boundaries examined and outcome
-- Standards: standard path or absent; lint/format results or not applicable
-- Browser: scenarios/results, not applicable with reason, or blocked with reason
+State the reviewed candidate and whether the review was independent.
+Order findings by impact. Each finding must include:
 
-Gaps: unresolved evidence/environment limits, or none.
-```
+- The affected path and line, symbol, or design element.
+- The triggering condition and expected behavior.
+- The observed result or a clearly labeled static inference.
+- The concrete impact and supporting evidence.
+- The smallest corrective outcome, without applying it.
 
-The first line must be exactly `Verdict: pass`, `Verdict: changes-required`, or `Verdict: incomplete`. Use `pass` only when every applicable gate is verified. Keep paths repository-relative and identify the repository by name; a report may be saved into a committed issue record, so do not include absolute checkout or home-directory paths.
-
-P0: immediate severe impact; P1: high impact; P2: ordinary correctness/security/standard defect; P3: low-impact actionable issue. Give verified changed-code lines when possible; for missing behavior, name the relevant symbol/path. Keep optional improvements separate and do not let preferences block completion.
-
-- `pass`: no actionable findings and every applicable acceptance/check gate verified. Explicitly say **“No actionable findings.”** Give concrete reasons for `not applicable` checks.
-- `changes-required`: a substantiated actionable finding, even if checks are also blocked; list all gaps separately.
-- `incomplete`: no substantiated finding, but scope/environment/evidence prevents complete assessment. Never present this as approval with caveats.
-
-Standalone review returns the report to the user and leaves tracking untouched. As a reviewer for `work`—whether you run as a subagent, a fresh session, a separate invocation, or a human—return it to the implementer, who owns fixes and tracking writes.
+List checks as passed, failed, not run, or not applicable with a reason.
+Keep optional improvements separate from blocking findings.
+Include all evidence gaps, even when the verdict is `changes-required`.
+An approval applies only to the candidate that was reviewed.
+Return the report without fixing the candidate or changing task status.

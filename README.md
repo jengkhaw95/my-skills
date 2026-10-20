@@ -1,129 +1,86 @@
-# Local development lifecycle skills
+# Engineering skills
 
-Three portable Agent Skills share a local issue lifecycle:
+One main entry skill and five supporting skills for clear decisions, simple code, and verified results.
+These skills extract the essential ideas from [poteto-mode and its linked skills](https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md).
+Each skill requires ASD-STE100 Simplified Technical English for prose.
 
-```text
-specs  → validate + deduplicate + triage → open
-work   → atomic claim → working → implement ↔ independent review → completed
-```
+## Start with engineering
 
-`needs-info` holds unresolved requests; `blocked` records an impediment; `closed` records duplicates, declined requests, and invalid issues. Work stays claimed during review and corrections. Standalone review never changes issue status.
+Use `engineering` as the main entry skill.
+Once active, it selects and reads the supporting skill for the request or current phase.
+You do not need to name each supporting skill yourself.
 
-The skills are designed to be harness-agnostic. They do not require a particular agent product, model, subagent API, browser tool, or version-control system. [PORTABILITY.md](PORTABILITY.md) records the capability contract and fallbacks.
+For example, ask: "Use engineering to fix duplicate orders after a retry."
+The entry skill selects `work` and uses investigation, design, or review procedures when the task needs them.
+It applies `technical-writing` to prose throughout the task.
+Routing does not require multiple agents.
 
-## Get started
+Automatic activation of `engineering` depends on the environment's skill-selection support.
+If necessary, invoke it explicitly or provide its `SKILL.md` file as instructions.
 
-### Install with the skills CLI
+## Supporting skills
 
-The [skills CLI](https://github.com/vercel-labs/skills) installs Agent Skills into the directory used by your harness. It requires Node.js 22.20+; the tracker also needs Python 3.9+.
+| Skill | Purpose | Example request |
+| --- | --- | --- |
+| [engineering](engineering/SKILL.md) | Select supporting procedures and coordinate the complete task. | Use engineering for this task. |
+| [investigate](investigate/SKILL.md) | Explain behavior or diagnose a problem without changing the product. | Investigate why saves fail after a restart. |
+| [design](design/SKILL.md) | Define the data model, boundaries, and design before implementation. | Design a retry process that cannot create duplicate orders. |
+| [work](work/SKILL.md) | Implement a feature, fix, refactor, or measured improvement. | Fix the duplicate orders and verify the result. |
+| [review](review/SKILL.md) | Assess a design or implementation without changing it. | Review the order changes for correctness and security. |
+| [technical-writing](technical-writing/SKILL.md) | Write or edit precise prose, documents, and skill instructions. | Write the setup guide in ASD-STE100 Simplified Technical English. |
+
+Each supporting skill contains its own procedure and language requirement.
+You can still invoke a supporting skill directly for a focused task.
+The supporting skills do not require the entry skill or one another.
+
+## Install
+
+For the complete workflow, install all six skill folders as siblings in your agent's skills directory.
+Keep each `SKILL.md` and included `LICENSE` file inside its folder.
+The entry skill resolves supporting files through relative links or available skill discovery.
+If your agent cannot discover skills, give it `engineering/SKILL.md` as instructions and keep the supporting folders accessible.
+For direct use of a supporting skill, you can install only that folder.
+
+You can also use the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add jengkhaw95/my-skills
 ```
 
-The command prompts for the target harness and install scope. The `--list` preview should report `review`, `specs`, and `work`. Non-interactive examples:
+Use the skill name with the invocation syntax that your agent supports.
+The procedures do not depend on that syntax.
 
-```bash
-# All three skills, globally, for Codex
-npx skills add jengkhaw95/my-skills --skill '*' -a codex -g -y
+## Language requirement
 
-# Every skill to every detected harness
-npx skills add jengkhaw95/my-skills --all
+Use [ASD-STE100 Simplified Technical English](https://www.asd-ste100.org/) for all prose produced under these skills.
+This includes replies, documents, comments, reports, and instructions for other agents.
+Keep code, commands, identifiers, and direct quotations exact.
 
-# Preview without installing
-npx skills add jengkhaw95/my-skills --list
-```
+STE requires approved vocabulary and writing rules.
+Short sentences alone do not establish compliance.
+Use the official standard and the relevant technical terminology to check the text.
+If a check is unavailable, identify the gap without claiming full compliance.
+The [technical-writing skill](technical-writing/SKILL.md) contains the detailed procedure.
 
-Replace `codex` with `claude-code`, `cursor`, `gemini-cli`, `opencode`, `github-copilot`, or another agent ID supported by the CLI. Add `--copy` on systems where symlinks are restricted. Review skill contents before installing; installed skills run with the agent's permissions.
+## Portability
 
-### Install from a local checkout
+The skill files use only `name` and `description` metadata.
+They contain no required model, provider, agent API, plugin, installation path, or background process.
+Use the tools available in the current environment.
+Report missing evidence when a required check cannot run.
 
-From the parent directory of a Git checkout named `my-skills`:
+Delegation is optional.
+An independent review can use another agent, a separate session, or a person.
+If only self-review is possible, label it accurately.
+A missing independent review remains a gap when the task requires one.
 
-```bash
-npx skills add my-skills
-```
+## Replacement of the previous set
 
-Or point at the folder explicitly from anywhere:
+This set replaces the previous local issue lifecycle.
+The issue tracker, Python helper, atomic claims, and mandatory tracking records have been removed.
+The `work` and `review` names remain, but their procedures are new.
+The `specs` skill has been removed.
+Installed copies of `specs` must be removed separately.
+Existing project issue records are outside this repository and remain untouched.
 
-```bash
-npx skills add ./path/to/my-skills
-```
-
-`npx skills add my-skills` is a local-path form; the CLI resolves the bare name as a Git repository on disk. For a remote install, the CLI needs an `owner/repo` source, so use `npx skills add jengkhaw95/my-skills`.
-
-### Install manually
-
-Keep the three skill folders together as siblings in the directory your harness scans for Agent Skills:
-
-```text
-<skills-directory>/
-  specs/
-  work/
-  review/
-```
-
-Common locations include `~/.claude/skills/`, `~/.codex/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/`, and project-local `.agents/skills/`, `.claude/skills/`, or `.github/skills/`. Consult your harness's documentation; the list is illustrative, not a requirement. Do not overwrite existing skills with the same names.
-
-If the harness has no native skill discovery, point it at the relevant `SKILL.md` file (or paste that file as instructions) and keep the sibling folders reachable so `work` can find `specs` and `review`. The repository is the source of these skills; project issue records are created in the project where they are invoked.
-
-### Verify and manage
-
-```bash
-npx skills list
-npx skills update
-npx skills remove specs work review
-```
-
-Add `-g` for global installs and `-a <agent>` to limit an operation to specific harnesses.
-
-## Usage
-
-Invoke a skill by name using your harness's syntax. Examples: `/specs` in Claude Code, `$specs` in Codex, `@specs` in clients that use mentions, or a plain request such as "use the specs skill to ...". Most harnesses also select a skill automatically from its description.
-
-| Skill | Use it for | Example request |
-| --- | --- | --- |
-| `specs` | Validate, deduplicate, and triage a request into a tracked issue | `specs Users cannot save an address containing Unicode characters.` |
-| `work` | Claim a task, implement it, and drive independent review | `work SPEC-1234ABCD` |
-| `review` | Read-only review of a change or existing feature | `review Review the current changes against SPEC-1234ABCD without editing files.` |
-
-More examples:
-
-- `work Pick up the highest-priority actionable local issue.`
-- `work Add keyboard navigation to the settings menu.` — runs intake before claiming.
-
-To run several tasks, have a coordinating agent start `work` in separate worker contexts, or run separate sessions yourself. Each worker claims its own issue and obtains an independent reviewer. Use isolated working copies (for example Git worktrees) for overlapping implementation areas; claims prevent duplicate task pickup, not conflicting edits to the same files.
-
-## Dependencies and capabilities
-
-| Capability | Needed for | If unavailable |
-| --- | --- | --- |
-| File read/write and command execution | All skills | The lifecycle cannot run. |
-| Python 3.9+ (standard library only) | Tracker helper | Intake, claim, and completion are unavailable; do not substitute a different tracker. |
-| POSIX file locking (macOS, Linux, or WSL) | Tracker mutations | Read-only `root`, `list`, and `show` still work; use WSL on Windows. |
-| Independent reviewer context (subagent, fresh session, separate invocation, or human) | `work` completion | Release to `blocked`; self-review cannot satisfy the gate. See [the independent-review guide](work/references/independent-review.md). |
-| Browser automation (for example playwright-cli, a Playwright or Chrome DevTools MCP server, or a built-in browser tool) | Browser-facing review and reproduction | Record a gap; do not claim browser verification. See [the browser procedure](review/references/browser-checks.md). |
-| Git | Worktree coordination | Optional. Without Git, the tracker uses the supplied project root and coordinates only that filesystem. |
-
-`CODING_STANDARD.md` applies when present; absence is reported rather than treated as a setup failure. Tests, lint, and format follow the target project's configuration, using check-only modes during review. Repository instruction files (for example `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or harness-specific rule files) are read when present.
-
-Review may create temporary artifacts outside the project. It must preserve project files, local tracking records, and persistent external state. Checks that cannot honor that restriction need a prepared disposable environment or an `incomplete` verdict.
-
-No tracker or coding standard is created merely by installing the skills. The first authorized issue creation initializes `.specs/issues/` in its target project. See [the tracking contract](specs/references/tracking.md) for schema, transitions, CLI usage, and interrupted-claim recovery.
-
-## Design choices
-
-- **Markdown with small YAML metadata**, rather than JSON-only issue documents: readable specifications, searchable headers, and machine-readable status. The helper accepts a deliberately restricted YAML format with JSON-encoded values and needs no YAML package.
-- **One record per issue**, without an index: smaller reads and fewer shared-file conflicts. IDs look like `SPEC-1234ABCD`.
-- **Atomic claims and freshness checks**: a Python helper uses OS file locking and atomic replacement. Creation checks a snapshot from the final duplicate search, so concurrent intake must reconcile instead of creating duplicate tasks from a stale backlog. Updates check issue revisions. Linked Git worktrees share the primary checkout's `.specs/issues/` directory. Separate clones or hosts need another coordination service.
-- **Durable ownership**: no automatic lease expiry that could start a second worker while the first still runs. Interrupted tasks need deliberate release after checking their owner stopped.
-- **Independent review with three verdicts**: `pass`, `changes-required`, `incomplete`. Missing required verification cannot count as success. The completion helper records the worker's attestation; it is not a security boundary against an agent fabricating evidence.
-- **Path hygiene**: records identify the repository by name and use repository-relative paths. The helper rejects absolute home-directory paths in titles, bodies, scopes, handoff notes, and review reports, so a committed record does not embed the local checkout path or user name.
-
-## Verification
-
-Run `python3 specs/scripts/test_specs.py -v` for isolated integration tests, including concurrent claim races and linked-worktree coordination. All test records live outside this repository in temporary directories.
-
-## Portability and harness adapters
-
-The portable core uses only the standard `SKILL.md` frontmatter (`name`, `description`). Host-specific metadata, wrappers, or installation scripts belong in a separate adapter layer, not in the skill body. This keeps the same skill usable when copied between harnesses. Some harnesses accept optional per-skill UI metadata; add it at install time rather than committing it into the portable skill.
+See [SOURCES.md](SOURCES.md) for the source revision, extraction map, and license notice.
